@@ -275,8 +275,8 @@
 
                 // Physics constants
                 this.gravity = 0.3;
-                this.friction = 0.999;
-                this.bounce = 0.85;
+                this.damping = 0.98;  // Changed from friction
+                this.bounce = 0.92;    // Increased bounce coefficient
                 this.wallThickness = 50;
 
                 // Circle boundary
@@ -411,9 +411,9 @@
                 // Apply gravity
                 this.ball.vy += this.gravity;
 
-                // Apply friction
-                this.ball.vx *= this.friction;
-                this.ball.vy *= this.friction;
+                // Apply damping (air resistance)
+                this.ball.vx *= this.damping;
+                this.ball.vy *= this.damping;
 
                 // Update position
                 this.ball.x += this.ball.vx;
@@ -429,15 +429,34 @@
                 this.isTouchingWall = distance >= minDistance - 2;
 
                 if (distance >= minDistance) {
-                    // Collision detected
+                    // Collision detected - push ball out to boundary
                     const angle = Math.atan2(dy, dx);
                     this.ball.x = this.circle.x + Math.cos(angle) * minDistance;
                     this.ball.y = this.circle.y + Math.sin(angle) * minDistance;
 
-                    // Bounce
+                    // Calculate velocity components
                     const speed = Math.sqrt(this.ball.vx ** 2 + this.ball.vy ** 2);
-                    this.ball.vx = Math.cos(angle) * speed * this.bounce;
-                    this.ball.vy = Math.sin(angle) * speed * this.bounce;
+                    
+                    // Normal vector (pointing outward from circle)
+                    const nx = Math.cos(angle);
+                    const ny = Math.sin(angle);
+                    
+                    // Dot product of velocity with normal
+                    const dotProduct = this.ball.vx * nx + this.ball.vy * ny;
+                    
+                    // Only bounce if moving towards the wall
+                    if (dotProduct > 0) {
+                        // Reflect velocity - bounce outward
+                        const reflectedVx = (dotProduct * nx) * this.bounce;
+                        const reflectedVy = (dotProduct * ny) * this.bounce;
+                        
+                        // Tangential component (preserve tangential motion)
+                        const tangentVx = this.ball.vx - dotProduct * nx;
+                        const tangentVy = this.ball.vy - dotProduct * ny;
+                        
+                        this.ball.vx = reflectedVx + tangentVx * 0.95;
+                        this.ball.vy = reflectedVy + tangentVy * 0.95;
+                    }
 
                     // Music sync
                     if (!wasTouching && this.isTouchingWall) {
