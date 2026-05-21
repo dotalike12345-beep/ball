@@ -262,6 +262,7 @@
                 this.isPlaying = false;
                 this.lastTouchTime = 0;
                 this.pausedTime = 0;
+                this.touchCount = 0;
 
                 // Ball properties
                 this.ballRadius = 15;
@@ -273,10 +274,10 @@
                     radius: this.ballRadius
                 };
 
-                // Physics constants - IMPROVED
-                this.gravity = 0.5;
-                this.damping = 0.95;
-                this.bounce = 0.88;
+                // Physics constants - БАТУТ РЕЖИМ
+                this.gravity = 0.2;  // Меньше гравитации
+                this.damping = 0.97;  // Меньше потерь энергии
+                this.bounce = 1.15;   // БАТУТ! Больше 1 = добавляет энергию
                 this.wallThickness = 50;
 
                 // Circle boundary
@@ -292,7 +293,7 @@
                 // Setup event listeners
                 this.setupEventListeners();
                 this.resizeCanvas();
-                console.log('BallSimulator v2 initialized with improved physics');
+                console.log('BallSimulator v3 - BATUT MODE');
             }
 
             setupEventListeners() {
@@ -375,6 +376,7 @@
                 this.ball.vy = 3;
                 this.isTouchingWall = false;
                 this.pausedTime = 0;
+                this.touchCount = 0;
                 document.getElementById('startBtn').textContent = '▶️ Старт';
                 document.getElementById('wallIndicator').classList.remove('active');
                 document.getElementById('simIndicator').classList.remove('active');
@@ -402,6 +404,7 @@
                     if (this.pausedTime < this.audioBuffer.duration) {
                         this.audioSource.start(0, this.pausedTime);
                         this.isPlaying = true;
+                        console.log('Music playing from:', this.pausedTime);
 
                         this.audioSource.onended = () => {
                             this.isPlaying = false;
@@ -414,10 +417,10 @@
             }
 
             update() {
-                // Apply gravity
+                // Apply gravity (little)
                 this.ball.vy += this.gravity;
 
-                // Apply damping
+                // Apply damping (very small)
                 this.ball.vx *= this.damping;
                 this.ball.vy *= this.damping;
 
@@ -435,33 +438,34 @@
                 this.isTouchingWall = distance >= minDistance - this.collisionThreshold;
 
                 if (distance > minDistance) {
-                    // Collision - push ball back to surface
+                    // Collision detected
                     const angle = Math.atan2(dy, dx);
                     const overlap = distance - minDistance;
                     
+                    // Push ball out
                     this.ball.x -= Math.cos(angle) * overlap;
                     this.ball.y -= Math.sin(angle) * overlap;
 
-                    // Get the outward normal
+                    // Normal vector
                     const nx = Math.cos(angle);
                     const ny = Math.sin(angle);
                     
-                    // Get velocity magnitude
+                    // Velocity
                     const vx = this.ball.vx;
                     const vy = this.ball.vy;
                     
-                    // Dot product with normal
+                    // Dot product
                     const dotProduct = vx * nx + vy * ny;
                     
-                    // Only bounce if moving outward
+                    // БАТУТ ОТСКОК
                     if (dotProduct > 0) {
-                        // Reflect velocity
                         this.ball.vx = (vx - 2 * dotProduct * nx) * this.bounce;
                         this.ball.vy = (vy - 2 * dotProduct * ny) * this.bounce;
                     }
 
                     // Music trigger
                     if (!wasTouching && this.isTouchingWall) {
+                        this.touchCount++;
                         if (!this.isPlaying) {
                             this.playMusic();
                         }
@@ -528,7 +532,7 @@
             const canvas = document.getElementById('canvas');
             const simulator = new BallSimulator(canvas);
             simulator.draw();
-            console.log('App v2 started');
+            console.log('App v3 BATUT started');
         });
     </script>
 </body>
