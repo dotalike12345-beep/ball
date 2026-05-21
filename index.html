@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ball Music Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a3e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: #00d4ff;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #00d4ff, #0099ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .header p {
+            font-size: 0.9em;
+            color: #00a3cc;
+            opacity: 0.8;
+        }
+
+        .simulator-container {
+            background: rgba(0, 20, 40, 0.8);
+            border: 3px solid #00d4ff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2),
+                        inset 0 0 30px rgba(0, 212, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        #canvas {
+            display: block;
+            margin: 0 auto 30px;
+            background: #000;
+            border: 2px solid #00d4ff;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1em;
+            border: 2px solid #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+        }
+
+        button:hover {
+            background: rgba(0, 212, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .info-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 0.85em;
+            color: #00a3cc;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 1.3em;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        .wall-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(0, 212, 255, 0.2);
+            border: 2px solid #00d4ff;
+            margin: 0 auto;
+            transition: all 0.2s ease;
+        }
+
+        .wall-indicator.active {
+            background: #00d4ff;
+            box-shadow: 0 0 15px #00d4ff;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff3333;
+        }
+
+        .status-indicator.active {
+            background: #00ff00;
+            box-shadow: 0 0 8px #00ff00;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .simulator-container {
+                padding: 20px;
+            }
+
+            .controls {
+                gap: 10px;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎾 Ball Music Simulator</h1>
+            <p>Музыка играет только когда шарик касается стены</p>
+        </div>
+
+        <div class="simulator-container">
+            <canvas id="canvas"></canvas>
+
+            <div class="controls">
+                <button id="uploadBtn">📁 Загрузить музыку</button>
+                <button id="startBtn">▶️ Старт</button>
+                <button id="resetBtn">🔄 Сброс</button>
+            </div>
+
+            <div class="info-panel">
+                <div class="info-box">
+                    <div class="info-label">Статус музыки</div>
+                    <div class="info-value" id="musicStatus">Не загружена</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">Касание стены</div>
+                    <div class="wall-indicator" id="wallIndicator"></div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">Скорость</div>
+                    <div class="info-value" id="speedValue">0 px/s</div>
+                </div>
+            </div>
+
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="status-indicator" id="physicsIndicator"></span>
+                    Физика
+                </div>
+                <div class="status-item">
+                    <span class="status-indicator" id="audioIndicator"></span>
+                    Аудио
+                </div>
+                <div class="status-item">
+                    <span class="status-indicator" id="simIndicator"></span>
+                    Симуляция
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" accept="audio/*">
+    <script src="script.js"></script>
+
+    <script>
+        // Update status indicators
+        setInterval(() => {
+            document.getElementById('physicsIndicator').classList.add('active');
+            document.getElementById('audioIndicator').classList.add('active');
+        }, 100);
+
+        const startBtn = document.getElementById('startBtn');
+        startBtn.addEventListener('click', function() {
+            const simIndicator = document.getElementById('simIndicator');
+            if (this.textContent.includes('Старт')) {
+                simIndicator.classList.remove('active');
+            } else {
+                simIndicator.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>
