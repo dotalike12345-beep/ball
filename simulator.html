@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ball Music Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a3e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: #00d4ff;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #00d4ff, #0099ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .header p {
+            font-size: 0.9em;
+            color: #00a3cc;
+            opacity: 0.8;
+        }
+
+        .simulator-container {
+            background: rgba(0, 20, 40, 0.8);
+            border: 3px solid #00d4ff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2),
+                        inset 0 0 30px rgba(0, 212, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        #canvas {
+            display: block;
+            margin: 0 auto 30px;
+            background: #000;
+            border: 2px solid #00d4ff;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1em;
+            border: 2px solid #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+        }
+
+        button:hover {
+            background: rgba(0, 212, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .info-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 0.85em;
+            color: #00a3cc;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 1.3em;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        .wall-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(0, 212, 255, 0.2);
+            border: 2px solid #00d4ff;
+            margin: 0 auto;
+            transition: all 0.2s ease;
+        }
+
+        .wall-indicator.active {
+            background: #00d4ff;
+            box-shadow: 0 0 15px #00d4ff;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff3333;
+        }
+
+        .status-indicator.active {
+            background: #00ff00;
+            box-shadow: 0 0 8px #00ff00;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .simulator-container {
+                padding: 20px;
+            }
+
+            .controls {
+                gap: 10px;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎾 Ball Music Simulator</h1>
+            <p>Музыка играет только когда шарик касается стены</p>
+        </div>
+
+        <div class="simulator-container">
+            <canvas id="canvas"></canvas>
+
+            <div class="controls">
+                <button id="uploadBtn">📁 Загрузить музыку</button>
+                <button id="startBtn">▶️ Старт</button>
+                <button id="resetBtn">🔄 Сброс</button>
+            </div>
+
+            <div class="info-panel">
+                <div class="info-box">
+                    <div class="info-label">Статус музыки</div>
+                    <div class="info-value" id="musicStatus">Не загружена</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">Касание стены</div>
+                    <div class="wall-indicator" id="wallIndicator"></div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">Скорость</div>
+                    <div class="info-value" id="speedValue">0 px/s</div>
+                </div>
+            </div>
+
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="status-indicator" id="physicsIndicator"></span>
+                    Физика
+                </div>
+                <div class="status-item">
+                    <span class="status-indicator" id="audioIndicator"></span>
+                    Аудио
+                </div>
+                <div class="status-item">
+                    <span class="status-indicator" id="simIndicator"></span>
+                    Симуляция
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" accept="audio/*">
+
+    <script>
+        // Ball Physics Simulator with Music Sync
+        class BallSimulator {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.running = false;
+                this.audioContext = null;
+                this.audioBuffer = null;
+                this.audioSource = null;
+                this.isPlaying = false;
+                this.lastTouchTime = 0;
+                this.pausedTime = 0;
+
+                // Ball properties
+                this.ballRadius = 15;
+                this.ball = {
+                    x: canvas.width / 2,
+                    y: canvas.height / 2 - 100,
+                    vx: 5,
+                    vy: 3,
+                    radius: this.ballRadius
+                };
+
+                // Physics constants - IMPROVED
+                this.gravity = 0.5;
+                this.damping = 0.95;
+                this.bounce = 0.88;
+                this.wallThickness = 50;
+
+                // Circle boundary
+                this.circle = {
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    radius: Math.min(canvas.width, canvas.height) / 2 - 40
+                };
+
+                this.isTouchingWall = false;
+                this.collisionThreshold = this.ball.radius + 1;
+
+                // Setup event listeners
+                this.setupEventListeners();
+                this.resizeCanvas();
+                console.log('BallSimulator v2 initialized with improved physics');
+            }
+
+            setupEventListeners() {
+                document.getElementById('uploadBtn').addEventListener('click', () => this.uploadAudio());
+                document.getElementById('startBtn').addEventListener('click', () => this.toggleSimulation());
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+                document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileSelect(e));
+                window.addEventListener('resize', () => this.resizeCanvas());
+            }
+
+            resizeCanvas() {
+                const container = this.canvas.parentElement;
+                const rect = container.getBoundingClientRect();
+                this.canvas.width = Math.min(800, rect.width - 40);
+                this.canvas.height = this.canvas.width * 0.75;
+
+                // Update circle position and size
+                this.circle.x = this.canvas.width / 2;
+                this.circle.y = this.canvas.height / 2;
+                this.circle.radius = Math.min(this.canvas.width, this.canvas.height) / 2 - 40;
+
+                // Reset ball position
+                if (!this.running) {
+                    this.ball.x = this.circle.x;
+                    this.ball.y = this.circle.y - this.circle.radius + 100;
+                }
+            }
+
+            uploadAudio() {
+                document.getElementById('fileInput').click();
+            }
+
+            handleFileSelect(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        if (!this.audioContext) {
+                            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        }
+
+                        this.audioBuffer = await this.audioContext.decodeAudioData(e.target.result);
+                        document.getElementById('musicStatus').textContent = '✓ Загружена';
+                        console.log('Audio loaded successfully');
+                    } catch (error) {
+                        console.error('Error loading audio:', error);
+                        document.getElementById('musicStatus').textContent = '✗ Ошибка';
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+
+            toggleSimulation() {
+                if (!this.audioBuffer) {
+                    alert('Пожалуйста, загрузите музыку сначала!');
+                    return;
+                }
+
+                this.running = !this.running;
+
+                if (this.running) {
+                    document.getElementById('startBtn').textContent = '⏸️ Пауза';
+                    document.getElementById('simIndicator').classList.add('active');
+                    this.animate();
+                } else {
+                    document.getElementById('startBtn').textContent = '▶️ Старт';
+                    document.getElementById('simIndicator').classList.remove('active');
+                    this.stopMusic();
+                }
+            }
+
+            reset() {
+                this.running = false;
+                this.stopMusic();
+                this.ball.x = this.circle.x;
+                this.ball.y = this.circle.y - this.circle.radius + 100;
+                this.ball.vx = 5;
+                this.ball.vy = 3;
+                this.isTouchingWall = false;
+                this.pausedTime = 0;
+                document.getElementById('startBtn').textContent = '▶️ Старт';
+                document.getElementById('wallIndicator').classList.remove('active');
+                document.getElementById('simIndicator').classList.remove('active');
+                this.draw();
+            }
+
+            stopMusic() {
+                if (this.audioSource) {
+                    try {
+                        this.audioSource.stop();
+                    } catch (e) {}
+                    this.audioSource = null;
+                }
+                this.isPlaying = false;
+            }
+
+            playMusic() {
+                if (this.isPlaying || !this.audioBuffer || !this.audioContext) return;
+
+                try {
+                    this.audioSource = this.audioContext.createBufferSource();
+                    this.audioSource.buffer = this.audioBuffer;
+                    this.audioSource.connect(this.audioContext.destination);
+
+                    if (this.pausedTime < this.audioBuffer.duration) {
+                        this.audioSource.start(0, this.pausedTime);
+                        this.isPlaying = true;
+
+                        this.audioSource.onended = () => {
+                            this.isPlaying = false;
+                            this.audioSource = null;
+                        };
+                    }
+                } catch (e) {
+                    console.error('Error playing audio:', e);
+                }
+            }
+
+            update() {
+                // Apply gravity
+                this.ball.vy += this.gravity;
+
+                // Apply damping
+                this.ball.vx *= this.damping;
+                this.ball.vy *= this.damping;
+
+                // Update position
+                this.ball.x += this.ball.vx;
+                this.ball.y += this.ball.vy;
+
+                // Circle collision
+                const dx = this.ball.x - this.circle.x;
+                const dy = this.ball.y - this.circle.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const minDistance = this.circle.radius - this.ball.radius;
+
+                const wasTouching = this.isTouchingWall;
+                this.isTouchingWall = distance >= minDistance - this.collisionThreshold;
+
+                if (distance > minDistance) {
+                    // Collision - push ball back to surface
+                    const angle = Math.atan2(dy, dx);
+                    const overlap = distance - minDistance;
+                    
+                    this.ball.x -= Math.cos(angle) * overlap;
+                    this.ball.y -= Math.sin(angle) * overlap;
+
+                    // Get the outward normal
+                    const nx = Math.cos(angle);
+                    const ny = Math.sin(angle);
+                    
+                    // Get velocity magnitude
+                    const vx = this.ball.vx;
+                    const vy = this.ball.vy;
+                    
+                    // Dot product with normal
+                    const dotProduct = vx * nx + vy * ny;
+                    
+                    // Only bounce if moving outward
+                    if (dotProduct > 0) {
+                        // Reflect velocity
+                        this.ball.vx = (vx - 2 * dotProduct * nx) * this.bounce;
+                        this.ball.vy = (vy - 2 * dotProduct * ny) * this.bounce;
+                    }
+
+                    // Music trigger
+                    if (!wasTouching && this.isTouchingWall) {
+                        if (!this.isPlaying) {
+                            this.playMusic();
+                        }
+                    }
+
+                    document.getElementById('wallIndicator').classList.add('active');
+                } else {
+                    if (wasTouching && !this.isTouchingWall) {
+                        if (this.isPlaying) {
+                            if (this.audioContext) {
+                                this.pausedTime = this.audioContext.currentTime;
+                            }
+                            this.stopMusic();
+                        }
+                    }
+                    document.getElementById('wallIndicator').classList.remove('active');
+                }
+
+                // Speed display
+                const speed = Math.sqrt(this.ball.vx ** 2 + this.ball.vy ** 2);
+                document.getElementById('speedValue').textContent = Math.round(speed * 10) + ' px/s';
+            }
+
+            draw() {
+                // Clear
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Circle
+                this.ctx.strokeStyle = '#00d4ff';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.arc(this.circle.x, this.circle.y, this.circle.radius, 0, Math.PI * 2);
+                this.ctx.stroke();
+
+                // Ball
+                this.ctx.fillStyle = '#ff3333';
+                this.ctx.beginPath();
+                this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                // Glow
+                if (this.isTouchingWall) {
+                    this.ctx.strokeStyle = 'rgba(255, 51, 51, 0.6)';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius + 5, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                }
+            }
+
+            animate() {
+                this.update();
+                this.draw();
+
+                if (this.running) {
+                    requestAnimationFrame(() => this.animate());
+                }
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('canvas');
+            const simulator = new BallSimulator(canvas);
+            simulator.draw();
+            console.log('App v2 started');
+        });
+    </script>
+</body>
+</html>
